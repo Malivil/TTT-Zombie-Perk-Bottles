@@ -53,9 +53,14 @@ end
 function SWEP:Equip() end
 
 function SWEP:Deploy()
+    if self.Owner:GetNWString("phdIsActive", "false") == "true" then
+        self.Owner:DrawViewModel(false)
+        return false
+    end
+
     self.Owner:DrawViewModel(true)
-    self.Weapon:SetNetworkedString("isDrinkingPerk", "true")
-    self.Owner:SetNetworkedString("phdIsActive", "false")
+    self.Weapon:SetNWString("isDrinkingPerk", "true")
+    self.Owner:SetNWString("phdIsActive", "false")
     self.Owner.ShouldRemoveFallDamage = false
 
     timer.Simple(0.5, function()
@@ -75,9 +80,9 @@ function SWEP:Deploy()
     timer.Simple(2.3, function()
         if self.Owner:Alive() then
             self.Weapon:EmitSound("hoff/animations/perks/017c99be.wav")
-            self.Owner:SetNetworkedString("shouldBlurPerkScreen", "true")
+            self.Owner:SetNWString("shouldBlurPerkScreen", "true")
             timer.Simple(0.5, function()
-                self.Owner:SetNetworkedString("shouldBlurPerkScreen", "false")
+                self.Owner:SetNWString("shouldBlurPerkScreen", "false")
             end)
 
             if SERVER then
@@ -92,18 +97,16 @@ function SWEP:Deploy()
     timer.Simple(3.1, function()
         if self.Owner:Alive() then
             self.Weapon:EmitSound("hoff/animations/perks/017bf9c0.wav")
-            self.Weapon:SetNetworkedString("isDrinkingPerk", "false")
-            self.Owner:SetNetworkedString("phdIsActive", "true")
+            self.Weapon:SetNWString("isDrinkingPerk", "false")
+            self.Owner:SetNWString("phdIsActive", "true")
             self.Owner.ShouldRemoveFallDamage = true
-            if SERVER then
-                timer.Simple(0.1, function() self.Weapon:Remove() end)
-            end
         end
     end)
 end
 
 local function RemovePerk(ply)
-    ply:SetNetworkedString("stamIsActive", "false")
+    if not IsValid(ply) then return end
+    ply:SetNWString("stamIsActive", "false")
     ply.ShouldRemoveFallDamage = false
     timer.Simple(2, function() hook.Remove("HUDPaint", "perkHUDPaintIconPhd") end)
 end
@@ -116,6 +119,10 @@ hook.Add("TTTEndRound", "perkEndRoundPhd", function()
         RemovePerk(v)
     end
 end)
+
+function SWEP:OnRemove()
+    RemovePerk(self.Owner)
+end
 
 function SWEP:PreDrop()
     RemovePerk(self.Owner)
@@ -140,7 +147,7 @@ end
 hook.Add("EntityTakeDamage", "perkRemoveFallDamagePhd", RemoveFallDamage)
 
 function SWEP:Holster()
-    if self.Weapon:GetNetworkedString("isDrinkingPerk") == "true" then
+    if self.Weapon:GetNWString("isDrinkingPerk", "false") == "true" then
         return false
     else
         return true
@@ -172,13 +179,13 @@ if CLIENT then
 
     SWEP.EquipMenuData = {
         type = "Perk Bottle",
-        desc = "PHD Flopper Perk.\nAutomatically drink perk to become immune to fall damage,\nexplosion damage, and create an explosion\nwhere you land. One time purchase."
+        desc = "PHD Flopper Perk.\nDrink perk to become immune to fall damage, explosion damage, and create an explosion where you land.\nOne time purchase."
     };
 
     local function perkBlur()
         local matBlurScreen = Material("pp/blurscreen")
         local function perkBlurHUD()
-            if LocalPlayer():GetNetworkedString("shouldBlurPerkScreen") == "true" then
+            if LocalPlayer():GetNWString("shouldBlurPerkScreen", "false") == "true" then
                 surface.SetMaterial(matBlurScreen)
                 surface.SetDrawColor(255, 255, 255, 255)
 
@@ -199,7 +206,7 @@ if CLIENT then
     -- hud icon from wiki
     local function perkIcon()
         local function perkIconHUD()
-            if LocalPlayer():GetNetworkedString("phdIsActive") == "true" then
+            if LocalPlayer():GetNWString("phdIsActive", "false") == "true" then
                 surface.SetMaterial(Material("vgui/hoff/perks/phd_hud.png"))
                 surface.SetDrawColor(255, 255, 255, 255)
                 surface.DrawTexturedRect(50, (ScrH() / 2) + 100, 38, 38)

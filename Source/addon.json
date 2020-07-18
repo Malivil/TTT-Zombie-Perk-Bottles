@@ -1,0 +1,13 @@
+{
+  "title": "TTT Zombie Perk Bottles",
+  "type": "ServerContent",
+  "ignore": [
+    ".git*",
+    "*.iml",
+    ".idea*",
+    "*.psd",
+    "*.vcproj",
+    "*.svn*",
+    "LICENSE"
+  ]
+}

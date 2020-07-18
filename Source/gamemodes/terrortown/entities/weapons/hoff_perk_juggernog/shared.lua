@@ -52,7 +52,7 @@ end
 function SWEP:Equip() end
 
 function SWEP:Deploy()
-    self.Weapon:SetNetworkedString("isDrinkingPerk", "true")
+    self.Weapon:SetNWString("isDrinkingPerk", "true")
 
     timer.Simple(0.5, function()
         if self.Owner:Alive() then
@@ -71,9 +71,9 @@ function SWEP:Deploy()
     timer.Simple(2.3, function()
         if self.Owner:Alive() then
             self.Weapon:EmitSound("hoff/animations/perks/017c99be.wav")
-            self.Owner:SetNetworkedString("shouldBlurPerkScreen", "true")
+            self.Owner:SetNWString("shouldBlurPerkScreen", "true")
             timer.Simple(0.5, function()
-                self.Owner:SetNetworkedString("shouldBlurPerkScreen", "false")
+                self.Owner:SetNWString("shouldBlurPerkScreen", "false")
             end)
 
             if SERVER then
@@ -86,7 +86,7 @@ function SWEP:Deploy()
     timer.Simple(3.1, function()
         if self.Owner:Alive() then
             self.Weapon:EmitSound("hoff/animations/perks/017bf9c0.wav")
-            self.Weapon:SetNetworkedString("isDrinkingPerk", "false")
+            self.Weapon:SetNWString("isDrinkingPerk", "false")
             self.Owner:SetHealth(100)
             if SERVER then
                 timer.Simple(0.1, function() self.Weapon:Remove() end)
@@ -96,7 +96,7 @@ function SWEP:Deploy()
 end
 
 function SWEP:Holster()
-    if self.Weapon:GetNetworkedString("isDrinkingPerk") == "true" then
+    if self.Weapon:GetNWString("isDrinkingPerk", "false") == "true" then
         return false
     else
         return true
@@ -128,13 +128,13 @@ if CLIENT then
 
     SWEP.EquipMenuData = {
         type = "Perk Bottle",
-        desc = "Juggernog Perk.\nAutomatically drink perk to give 100\nhealth. One time purchase."
+        desc = "Juggernog Perk.\nDrink perk to give 100 health.\nOne time purchase."
     };
 
     local function perkBlur()
         local matBlurScreen = Material("pp/blurscreen")
         local function perkBlurHUD()
-            if LocalPlayer():GetNetworkedString("shouldBlurPerkScreen") == "true" then
+            if LocalPlayer():GetNWString("shouldBlurPerkScreen", "false") == "true" then
                 surface.SetMaterial(matBlurScreen)
                 surface.SetDrawColor(255, 255, 255, 255)
 
