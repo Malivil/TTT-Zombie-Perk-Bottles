@@ -99,7 +99,11 @@ function SWEP:Deploy()
             self.Weapon:SetNWString("isDrinkingPerk", "false")
             self.Owner:SetNWString("stamIsActive", "true")
             self.Owner:SetWalkSpeed(300)
-            self.Owner:SetRunSpeed(575)
+            if engine.ActiveGamemode() == "terrotown" then
+                self.Owner:SetMaxSpeed(300)
+            else
+                self.Owner:SetRunSpeed(675)
+            end
         end
     end)
 end
@@ -107,8 +111,13 @@ end
 local function RemovePerk(ply)
     if not IsValid(ply) then return end
     ply:SetNWString("stamIsActive", "false")
-    ply:SetWalkSpeed(250)
-    ply:SetRunSpeed(500)
+    ply:SetWalkSpeed(220)
+    ply:SetRunSpeed(600)
+    if engine.ActiveGamemode() == "terrotown" then
+        ply:SetMaxSpeed(220)
+    else
+        ply:SetRunSpeed(600)
+    end
     timer.Simple(2, function() hook.Remove("HUDPaint", "perkHUDPaintIconStaminup") end)
 end
 
