@@ -53,11 +53,6 @@ end
 function SWEP:Equip() end
 
 function SWEP:Deploy()
-    if self.Owner:GetNetworkedString("stamIsActive") == "true" then
-        self.Owner:DrawViewModel(false)
-        return false
-    end
-
     self.Owner:DrawViewModel(true)
     self.Weapon:SetNetworkedString("isDrinkingPerk", "true")
     self.Owner:SetNetworkedString("stamIsActive", "false")
@@ -100,22 +95,33 @@ function SWEP:Deploy()
             self.Owner:SetNetworkedString("stamIsActive", "true")
             self.Owner:SetWalkSpeed(300)
             self.Owner:SetRunSpeed(575)
+            if SERVER then
+                timer.Simple(0.1, function() self.Weapon:Remove() end)
+            end
         end
     end)
 end
 
-function SWEP:OnRemove()
-    self.Owner:SetNetworkedString("stamIsActive", "false")
-    self.Owner:SetWalkSpeed(250)
-    self.Owner:SetRunSpeed(500)
+function SWEP:OnRemove() end
+
+local function RemovePerk(ply)
+    ply:SetNetworkedString("stamIsActive", "false")
+    ply:SetWalkSpeed(250)
+    ply:SetRunSpeed(500)
     timer.Simple(2, function() hook.Remove("HUDPaint", "perkHUDPaintIconStaminup") end)
 end
 
+hook.Add("PlayerDeath", "perkPlayerDeathStaminup", function(vic, infl, att)
+    RemovePerk(vic)
+end)
+hook.Add("TTTEndRound", "perkEndRoundStaminup", function()
+    for _, v in pairs(player.GetAll()) do
+        RemovePerk(v)
+    end
+end)
+
 function SWEP:PreDrop()
-    self.Owner:SetNetworkedString("stamIsActive", "false")
-    self.Owner:SetWalkSpeed(250)
-    self.Owner:SetRunSpeed(500)
-    timer.Simple(2, function() hook.Remove("HUDPaint", "perkHUDPaintIconStaminup") end)
+    RemovePerk(self.Owner)
 end
 
 function SWEP:Holster()
@@ -170,8 +176,8 @@ if CLIENT then
                 surface.DrawRect(0, 0, ScrW(), ScrH())
             end
         end
-        hook.Add("HUDPaint", "perkBlurPaint", perkBlurHUD)
-        timer.Simple(2, function() hook.Remove("HUDPaint", "perkBlurPaint") end)
+        hook.Add("HUDPaint", "perkBlurPaintStaminup", perkBlurHUD)
+        timer.Simple(2, function() hook.Remove("HUDPaint", "perkBlurPaintStaminup") end)
     end
     net.Receive("perkBGBlurStaminup", perkBlur)
 

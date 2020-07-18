@@ -53,11 +53,6 @@ end
 function SWEP:Equip() end
 
 function SWEP:Deploy()
-    if self.Owner:GetNetworkedString("phdIsActive") == "true" then
-        self.Owner:DrawViewModel(false)
-        return false
-    end
-
     self.Owner:DrawViewModel(true)
     self.Weapon:SetNetworkedString("isDrinkingPerk", "true")
     self.Owner:SetNetworkedString("phdIsActive", "false")
@@ -100,20 +95,30 @@ function SWEP:Deploy()
             self.Weapon:SetNetworkedString("isDrinkingPerk", "false")
             self.Owner:SetNetworkedString("phdIsActive", "true")
             self.Owner.ShouldRemoveFallDamage = true
+            if SERVER then
+                timer.Simple(0.1, function() self.Weapon:Remove() end)
+            end
         end
     end)
 end
 
-function SWEP:OnRemove()
-    self.Owner:SetNetworkedString("phdIsActive", "false")
-    self.Owner.ShouldRemoveFallDamage = false
-    timer.Simple(2, function() hook.Remove("HUDPaint", "perkHUDPaintIcon") end)
+local function RemovePerk(ply)
+    ply:SetNetworkedString("stamIsActive", "false")
+    ply.ShouldRemoveFallDamage = false
+    timer.Simple(2, function() hook.Remove("HUDPaint", "perkHUDPaintIconPhd") end)
 end
 
+hook.Add("PlayerDeath", "perkPlayerDeathPhd", function(vic, infl, att)
+    RemovePerk(vic)
+end)
+hook.Add("TTTEndRound", "perkEndRoundPhd", function()
+    for _, v in pairs(player.GetAll()) do
+        RemovePerk(v)
+    end
+end)
+
 function SWEP:PreDrop()
-    self.Owner:SetNetworkedString("phdIsActive", "false")
-    self.Owner.ShouldRemoveFallDamage = false
-    timer.Simple(2, function() hook.Remove("HUDPaint", "perkHUDPaintIcon") end)
+    RemovePerk(self.Owner)
 end
 
 local function RemoveFallDamage(target, dmginfo)
@@ -132,7 +137,7 @@ local function RemoveFallDamage(target, dmginfo)
         end
     end
 end
-hook.Add("EntityTakeDamage", "RemoveFallDamage", RemoveFallDamage)
+hook.Add("EntityTakeDamage", "perkRemoveFallDamagePhd", RemoveFallDamage)
 
 function SWEP:Holster()
     if self.Weapon:GetNetworkedString("isDrinkingPerk") == "true" then
@@ -186,8 +191,8 @@ if CLIENT then
                 surface.DrawRect(0, 0, ScrW(), ScrH())
             end
         end
-        hook.Add("HUDPaint", "perkBlurPaint", perkBlurHUD)
-        timer.Simple(2, function() hook.Remove("HUDPaint", "perkBlurPaint") end)
+        hook.Add("HUDPaint", "perkBlurPaintPhd", perkBlurHUD)
+        timer.Simple(2, function() hook.Remove("HUDPaint", "perkBlurPaintPhd") end)
     end
     net.Receive("perkBGBlurPhd", perkBlur)
 
@@ -200,7 +205,7 @@ if CLIENT then
                 surface.DrawTexturedRect(50, (ScrH() / 2) + 100, 38, 38)
             end
         end
-        hook.Add("HUDPaint", "perkHUDPaintIcon", perkIconHUD)
+        hook.Add("HUDPaint", "perkHUDPaintIconPhd", perkIconHUD)
     end
     net.Receive("perkHUDIconPhd", perkIcon)
 end

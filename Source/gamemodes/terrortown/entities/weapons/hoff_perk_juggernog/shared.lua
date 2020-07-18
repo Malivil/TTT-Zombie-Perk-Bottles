@@ -147,8 +147,8 @@ if CLIENT then
                 surface.DrawRect(0, 0, ScrW(), ScrH())
             end
         end
-        hook.Add("HUDPaint", "perkBlurPaint", perkBlurHUD)
-        timer.Simple(2, function() hook.Remove("HUDPaint", "perkBlurPaint") end)
+        hook.Add("HUDPaint", "perkBlurPaintJug", perkBlurHUD)
+        timer.Simple(2, function() hook.Remove("HUDPaint", "perkBlurPaintJug") end)
     end
     net.Receive("perkBGBlurJug", perkBlur)
 end
