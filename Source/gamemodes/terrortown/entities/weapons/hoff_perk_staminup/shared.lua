@@ -45,11 +45,12 @@ SWEP.CorrectModelPlacement = Vector(0, 0, -1)
 SWEP.SwayScale = 0.01
 SWEP.BobScale = 0.01
 
-function SWEP:Equip(ply)
-    local oldWep = self.Owner:GetActiveWeapon()
-    ply:SetActiveWeapon("zombies_perk_staminup")
-    timer.Simple(3.8, function() ply:SetActiveWeapon(oldWep) end)
+if SERVER then
+    util.AddNetworkString("perkBGBlurStaminup")
+    util.AddNetworkString("perkHUDIconStaminup")
 end
+
+function SWEP:Equip() end
 
 function SWEP:Deploy()
     if self.Owner:GetNetworkedString("stamIsActive") == "true" then
@@ -82,10 +83,13 @@ function SWEP:Deploy()
             timer.Simple(0.5, function()
                 self.Owner:SetNetworkedString("shouldBlurPerkScreen", "false")
             end)
-            umsg.Start("perkBGBlur", self.Owner)
-            umsg.End()
-            umsg.Start("perkHUDIconStaminup", self.Owner)
-            umsg.End()
+
+            if SERVER then
+                net.Start("perkBGBlurStaminup")
+                net.Send(self.Owner)
+                net.Start("perkHUDIconStaminup")
+                net.Send(self.Owner)
+            end
         end
     end)
 
@@ -101,58 +105,18 @@ function SWEP:Deploy()
 end
 
 function SWEP:OnRemove()
-    print("Remove 2")
     self.Owner:SetNetworkedString("stamIsActive", "false")
     self.Owner:SetWalkSpeed(250)
     self.Owner:SetRunSpeed(500)
-    timer.Simple(2, function()
-        hook.Remove("HUDPaint", "perkHUDPaintIconStaminup")
-    end)
+    timer.Simple(2, function() hook.Remove("HUDPaint", "perkHUDPaintIconStaminup") end)
 end
 
 function SWEP:PreDrop()
-    print("PreDrop 2")
     self.Owner:SetNetworkedString("stamIsActive", "false")
     self.Owner:SetWalkSpeed(250)
     self.Owner:SetRunSpeed(500)
-    timer.Simple(2, function()
-        hook.Remove("HUDPaint", "perkHUDPaintIconStaminup")
-    end)
+    timer.Simple(2, function() hook.Remove("HUDPaint", "perkHUDPaintIconStaminup") end)
 end
-
-local function perkBlur()
-    local matBlurScreen = Material("pp/blurscreen")
-    local function perkBlurHUD()
-        if LocalPlayer():GetNetworkedString("shouldBlurPerkScreen") == "true" then
-            surface.SetMaterial(matBlurScreen)
-            surface.SetDrawColor(255, 255, 255, 255)
-
-            matBlurScreen:SetFloat("$blur", 6)
-            render.UpdateScreenEffectTexture()
-
-            surface.DrawTexturedRect(0, 0, ScrW(), ScrH())
-
-            surface.SetDrawColor(0, 0, 0, 60)
-            surface.DrawRect(0, 0, ScrW(), ScrH())
-        end
-    end
-    hook.Add("HUDPaint", "perkBlurPaint", perkBlurHUD)
-    timer.Simple(2, function() hook.Remove("HUDPaint", "perkBlurPaint") end)
-end
-usermessage.Hook("perkBGBlur", perkBlur)
-
--- hud icon from wiki
-local function perkIcon()
-    local function perkIconHUD()
-        if LocalPlayer():GetNetworkedString("stamIsActive") == "true" then
-            surface.SetMaterial(Material("vgui/hoff/perks/marathon_hud.png"))
-            surface.SetDrawColor(255, 255, 255, 255)
-            surface.DrawTexturedRect(50, (ScrH() / 2) + 150, 38, 38)
-        end
-    end
-    hook.Add("HUDPaint", "perkHUDPaintIconStaminup", perkIconHUD)
-end
-usermessage.Hook("perkHUDIconStaminup", perkIcon)
 
 function SWEP:Holster()
     if self.Weapon:GetNetworkedString("isDrinkingPerk") == "true" then
@@ -189,4 +153,38 @@ if CLIENT then
         type = "Perk Bottle",
         desc = "Stamin-Up Perk.\nAutomatically drink perk to greatly increase\nwalk speed. One time purchase."
     };
+
+    local function perkBlur()
+        local matBlurScreen = Material("pp/blurscreen")
+        local function perkBlurHUD()
+            if LocalPlayer():GetNetworkedString("shouldBlurPerkScreen") == "true" then
+                surface.SetMaterial(matBlurScreen)
+                surface.SetDrawColor(255, 255, 255, 255)
+
+                matBlurScreen:SetFloat("$blur", 6)
+                render.UpdateScreenEffectTexture()
+
+                surface.DrawTexturedRect(0, 0, ScrW(), ScrH())
+
+                surface.SetDrawColor(0, 0, 0, 60)
+                surface.DrawRect(0, 0, ScrW(), ScrH())
+            end
+        end
+        hook.Add("HUDPaint", "perkBlurPaint", perkBlurHUD)
+        timer.Simple(2, function() hook.Remove("HUDPaint", "perkBlurPaint") end)
+    end
+    net.Receive("perkBGBlurStaminup", perkBlur)
+
+    -- hud icon from wiki
+    local function perkIcon()
+        local function perkIconHUD()
+            if LocalPlayer():GetNetworkedString("stamIsActive") == "true" then
+                surface.SetMaterial(Material("vgui/hoff/perks/marathon_hud.png"))
+                surface.SetDrawColor(255, 255, 255, 255)
+                surface.DrawTexturedRect(50, (ScrH() / 2) + 150, 38, 38)
+            end
+        end
+        hook.Add("HUDPaint", "perkHUDPaintIconStaminup", perkIconHUD)
+    end
+    net.Receive("perkHUDIconStaminup", perkIcon)
 end

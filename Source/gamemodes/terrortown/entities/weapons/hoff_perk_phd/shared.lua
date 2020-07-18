@@ -45,11 +45,12 @@ SWEP.CorrectModelPlacement = Vector(0, 0, -1)
 SWEP.SwayScale = 0.01
 SWEP.BobScale = 0.01
 
-function SWEP:Equip(ply)
-    local oldWep = self.Owner:GetActiveWeapon()
-    ply:SetActiveWeapon("zombies_perk_phd")
-    timer.Simple(3.8, function() ply:SetActiveWeapon(oldWep) end)
+if SERVER then
+    util.AddNetworkString("perkBGBlurPhd")
+    util.AddNetworkString("perkHUDIconPhd")
 end
+
+function SWEP:Equip() end
 
 function SWEP:Deploy()
     if self.Owner:GetNetworkedString("phdIsActive") == "true" then
@@ -83,10 +84,13 @@ function SWEP:Deploy()
             timer.Simple(0.5, function()
                 self.Owner:SetNetworkedString("shouldBlurPerkScreen", "false")
             end)
-            umsg.Start("perkBGBlur", self.Owner)
-            umsg.End()
-            umsg.Start("perkHUDIcon", self.Owner)
-            umsg.End()
+
+            if SERVER then
+                net.Start("perkBGBlurPhd")
+                net.Send(self.Owner)
+                net.Start("perkHUDIconPhd")
+                net.Send(self.Owner)
+            end
         end
     end)
 
@@ -98,7 +102,6 @@ function SWEP:Deploy()
             self.Owner.ShouldRemoveFallDamage = true
         end
     end)
-
 end
 
 function SWEP:OnRemove()
@@ -129,42 +132,7 @@ local function RemoveFallDamage(target, dmginfo)
         end
     end
 end
-
 hook.Add("EntityTakeDamage", "RemoveFallDamage", RemoveFallDamage)
-
-local function perkBlur()
-    local matBlurScreen = Material("pp/blurscreen")
-    local function perkBlurHUD()
-        if LocalPlayer():GetNetworkedString("shouldBlurPerkScreen") == "true" then
-            surface.SetMaterial(matBlurScreen)
-            surface.SetDrawColor(255, 255, 255, 255)
-
-            matBlurScreen:SetFloat("$blur", 6)
-            render.UpdateScreenEffectTexture()
-
-            surface.DrawTexturedRect(0, 0, ScrW(), ScrH())
-
-            surface.SetDrawColor(0, 0, 0, 60)
-            surface.DrawRect(0, 0, ScrW(), ScrH())
-        end
-    end
-    hook.Add("HUDPaint", "perkBlurPaint", perkBlurHUD)
-    timer.Simple(2, function() hook.Remove("HUDPaint", "perkBlurPaint") end)
-end
-usermessage.Hook("perkBGBlur", perkBlur)
-
--- hud icon from wiki
-local function perkIcon()
-    local function perkIconHUD()
-        if LocalPlayer():GetNetworkedString("phdIsActive") == "true" then
-            surface.SetMaterial(Material("vgui/hoff/perks/phd_hud.png"))
-            surface.SetDrawColor(255, 255, 255, 255)
-            surface.DrawTexturedRect(50, (ScrH() / 2) + 100, 38, 38)
-        end
-    end
-    hook.Add("HUDPaint", "perkHUDPaintIcon", perkIconHUD)
-end
-usermessage.Hook("perkHUDIcon", perkIcon)
 
 function SWEP:Holster()
     if self.Weapon:GetNetworkedString("isDrinkingPerk") == "true" then
@@ -201,4 +169,38 @@ if CLIENT then
         type = "Perk Bottle",
         desc = "PHD Flopper Perk.\nAutomatically drink perk to become immune to fall damage,\nexplosion damage, and create an explosion\nwhere you land. One time purchase."
     };
+
+    local function perkBlur()
+        local matBlurScreen = Material("pp/blurscreen")
+        local function perkBlurHUD()
+            if LocalPlayer():GetNetworkedString("shouldBlurPerkScreen") == "true" then
+                surface.SetMaterial(matBlurScreen)
+                surface.SetDrawColor(255, 255, 255, 255)
+
+                matBlurScreen:SetFloat("$blur", 6)
+                render.UpdateScreenEffectTexture()
+
+                surface.DrawTexturedRect(0, 0, ScrW(), ScrH())
+
+                surface.SetDrawColor(0, 0, 0, 60)
+                surface.DrawRect(0, 0, ScrW(), ScrH())
+            end
+        end
+        hook.Add("HUDPaint", "perkBlurPaint", perkBlurHUD)
+        timer.Simple(2, function() hook.Remove("HUDPaint", "perkBlurPaint") end)
+    end
+    net.Receive("perkBGBlurPhd", perkBlur)
+
+    -- hud icon from wiki
+    local function perkIcon()
+        local function perkIconHUD()
+            if LocalPlayer():GetNetworkedString("phdIsActive") == "true" then
+                surface.SetMaterial(Material("vgui/hoff/perks/phd_hud.png"))
+                surface.SetDrawColor(255, 255, 255, 255)
+                surface.DrawTexturedRect(50, (ScrH() / 2) + 100, 38, 38)
+            end
+        end
+        hook.Add("HUDPaint", "perkHUDPaintIcon", perkIconHUD)
+    end
+    net.Receive("perkHUDIconPhd", perkIcon)
 end
