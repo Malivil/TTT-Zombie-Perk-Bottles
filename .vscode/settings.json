@@ -1,0 +1,28 @@
+{
+    "Lua.diagnostics.globals": [
+        "timer",
+        "net",
+        "SERVER",
+        "Angle",
+        "SWEP",
+        "Vector",
+        "util",
+        "ROLE_TRAITOR",
+        "ROLE_DETECTIVE",
+        "WEAPON_EQUIP2",
+        "AddCSLuaFile",
+        "CLIENT",
+        "Material",
+        "LocalPlayer",
+        "surface",
+        "ScrW",
+        "render",
+        "ScrH",
+        "hook",
+        "player",
+        "ents",
+        "IsValid",
+        "engine",
+        "WEPS"
+    ]
+}
