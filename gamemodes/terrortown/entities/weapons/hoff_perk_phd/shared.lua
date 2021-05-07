@@ -106,7 +106,7 @@ end
 
 local function RemovePerk(ply)
     if not IsValid(ply) then return end
-    ply:SetNWString("stamIsActive", "false")
+    ply:SetNWString("phdIsActive", "false")
     ply.ShouldRemoveFallDamage = false
     timer.Simple(2, function() hook.Remove("HUDPaint", "perkHUDPaintIconPhd") end)
 end
